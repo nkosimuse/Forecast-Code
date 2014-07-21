@@ -274,8 +274,7 @@ class get_fvcom(track):
             url = 'http://www.smast.umassd.edu:8080/thredds/dodsC/FVCOM/NECOFS/Forecasts/NECOFS_GOM3_FORECAST.nc?lon[0:1:51215],lat[0:1:51215],lonc[0:1:95721],latc[0:1:95721],siglay[0:1:39][0:1:51215],h[0:1:51215],u[{0}:1:{1}][0:1:39][0:1:95721],v[{0}:1:{1}][0:1:39][0:1:95721]'
             current_time = pytz.utc.localize(datetime.now().replace(hour=0,minute=0))
             period = starttime-\
-                     (current_time-timedelta(days=11))
-                     #(current_time-timedelta(days=3))
+                     (current_time-timedelta(days=3))
             index1 = int(period.total_seconds()/60/60)
             index2 = index1 + self.hours
             url = url.format(index1, index2)
@@ -284,7 +283,7 @@ class get_fvcom(track):
             url = 'http://www.smast.umassd.edu:8080/thredds/dodsC/models/fvcom/NECOFS/Forecasts/NECOFS_FVCOM_OCEAN_MASSBAY_FORECAST.nc?lon[0:1:98431],lat[0:1:98431],lonc[0:1:165094],latc[0:1:165094],siglay[0:1:9][0:1:98431],h[0:1:98431],u[{0}:1:{1}][0:1:9][0:1:165094],v[{0}:1:{1}][0:1:9][0:1:165094]'
             current_time = pytz.utc.localize(datetime.now().replace(hour=0,minute=0))
             period = starttime-\
-                     (current_time-timedelta(days=11))
+                     (current_time-timedelta(days=3))
             index1 = int(period.total_seconds()/60/60)
             index2 = index1 + self.hours
             url = url.format(index1, index2)
@@ -733,9 +732,9 @@ def draw_basemap(fig, ax, lonsize, latsize, interval_lon=0.5, interval_lat=0.5):
 #drifter_ids = ['108410712','108420701','110410711','110410712','110410713','110410714',
 #               '110410715','110410716','114410701','115410701','115410702']                                                  # Default drifter ID
 #drifter_ids = ['115410701','118410701']#,'119410714','135410701','110410713','119410716']
-drifter_ids = ['146420701']
+drifter_ids = ['147420702']
 mod = 'GOM3'                                                             # mod has to be '30yr' or 'GOM3' or 'massbay'
-filename='drift_gomi_2014_1.dat'
+filename='drift_uconn_morgan_1.dat'
 depth = -1
 days = 3
 starttime = datetime(2011,5,12,13,0,0,0,pytz.UTC)
