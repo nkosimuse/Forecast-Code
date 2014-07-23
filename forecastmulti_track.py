@@ -477,7 +477,7 @@ data: a dict that has 'u' and 'v'
         
 class get_drifter(track):
 
-    def __init__(self, drifter_id,filename=None):
+    def __init__(self, drifter_id,filename='drift_uconn_morgan_2014_1.dat'):
         self.drifter_id = drifter_id
         self.filename=filename
     def get_track(self, starttime=None, days=None):
@@ -724,23 +724,19 @@ draw the basemap?
 ##############################################################
 
 ''' initialize constants'''
-#'115410701','118410701'
-#drifter_ids = ['108410712','108420701','110410711','110410712','110410713','110410714',
-# '110410715','110410716','114410701','115410701','115410702'] # Default drifter ID
-#drifter_ids = ['115410701','118410701']#,'119410714','135410701','110410713','119410716']
-drifter_ids = ['147420704']
+drifter_ids = ['147420701']
 mod = 'GOM3' # mod has to be '30yr' or 'GOM3' or 'massbay'
 filename='drift_uconn_morgan_2014_1.dat'
 depth = -1
-days = 3
+days = 5
 #starttime = datetime(2014, 7, 22, 17,0,0,0,pytz.UTC)
 starttime=None
 for ID in drifter_ids:
+    print ID
     if filename:
          drifter = get_drifter(ID,filename) # Retrive drifter data
     else:
          drifter = get_drifter(ID)
-    print ID
     if starttime:
 
          if days:
