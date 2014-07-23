@@ -62,14 +62,17 @@ def getrawdrift(did,filename):
    routine to get raw drifter data from ascii files on line
    '''
    url='http://nefsc.noaa.gov/drifter/'+filename
+   print url
    df=pd.read_csv(url,header=None, delimiter=r"\s+")
    # make a datetime
    dtime=[]
-   for k in range(len(df[0])):
-      dt1=dt.datetime(int(filename[-10:-6]),df[2][k],df[3][k],df[4][k],df[5][k],0,0,pytz.utc)
-      print dt1
+   index = np.where(df[0]==int(did))[0]
+   newData = df.ix[index]
+   for k in newData[0].index:
+      #dt1=dt.datetime(int(filename[-10:-6]),df[2][k],df[3][k],df[4][k],df[5][k],0,0,pytz.utc)
+      dt1=dt.datetime(int(filename[-10:-6]),newData[2][k],newData[3][k],newData[4][k],newData[5][k],0,0,pytz.utc)
       dtime.append(dt1)
-   return df[8],df[7],dtime,df[9]
+   return newData[8],newData[7],dtime,newData[9]
    
    
 def getcodar(url, datetime_wanted):
