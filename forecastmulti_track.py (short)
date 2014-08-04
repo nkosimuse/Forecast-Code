@@ -12,86 +12,99 @@ import matplotlib.pyplot as plt
 from matplotlib import path
 import track_functions
 from track_functions import *
+from datetime import datetime as dt
+from datetime import timedelta as td
+import pytz
 
-#initialize constants
-drifter_ids = ['1474207011']
-mod = 'GOM3' # mod has to be '30yr' or 'GOM3' or 'massbay'
-filename='drift_noaa_morgan_2014_1.dat'
+#initialize constants##########################
+drifter_ids = ['148420702']
+mod = 'massbay' # mod has to be '30yr' or 'GOM3' or 'massbay'
+filename='drift_cscr_2014_1.dat'
 depth = -1
-days = 3
+days = 3 # three days from start of today is the maximum for forecast cases
 #starttime = datetime(2014, 7, 22, 17,0,0,0,pytz.UTC)
 starttime=None
+bnd=np.load('gom3_boundary.npy') # boundary around the gom3 grid
+###############################################
+
+nowtime=pytz.utc.localize(dt.now().replace(hour=0,minute=0,second=0))# start of today
+if filename=='drift_X.dat':
+  #...find distinct ids by calling getrawdrift 
+  drifter_ids=getrawdrift_ids(filename)
+
 for ID in drifter_ids:
-    print ID
+  print ID
+  if ID>140000000: # only work on this years deployments
     if filename:
          drifter = get_drifter(ID,filename) # Retrive drifter data
     else:
          drifter = get_drifter(ID)
-    if starttime:
 
-         if days:
-             nodes_drifter = drifter.get_track(starttime,days)
-
-         else:
-            nodes_drifter = drifter.get_track(starttime)
-        
-    else:
-        nodes_drifter = drifter.get_track()
-       
-    ''' determine latitude, longitude, start, and end times of the drifter?'''
-
-    #lon, lat = nodes_drifter['lon'][0], nodes_drifter['lat'][0]
+    nodes_drifter = drifter.get_track()
+    # determine latitude, longitude, start, and end times of the drifter?
     lon, lat = nodes_drifter['lon'][-1], nodes_drifter['lat'][-1]
-    # adjust for the added 5 hours in the models
-    starttime = nodes_drifter['time'][-1]#-timedelta(hours=5)
-    endtime = nodes_drifter['time'][-1]+timedelta(days=1)
-    print starttime
+    torf=point_in_poly(lon, lat, bnd)
+    starttime = nodes_drifter['time'][-1]
+    #endtime = nodes_drifter['time'][-1]+timedelta(days=days)
+    endtime = nowtime+td(days=days) # the endtime of the forecast is "days" after the start of today not days after end of drifter
+    print starttime,endtime
+    if (torf) and (starttime>nowtime-td(days=3)) and (starttime<nowtime+td(days=days)):
+                print str(ID)+' inside grid and within  days of now' 
 
-    ''' read data points from fvcom and roms websites and store them'''
-    get_fvcom_obj = get_fvcom(mod)
-    url_fvcom = get_fvcom_obj.get_url(starttime, endtime)
-    nodes_fvcom = get_fvcom_obj.get_track(lon,lat,depth,url_fvcom) # iterates fvcom's data
-    #get_roms_obj = get_roms()
-    #url_roms = get_roms_obj.get_url(starttime, endtime)
-    #nodes_roms = get_roms_obj.get_track(lon, lat, depth, url_roms)
-    
-    #if type(nodes_roms['lat']) == np.float64: # ensures that the single point case still functions properly
-    
-      # nodes_roms['lon'] = [nodes_roms['lon']]
-       # nodes_roms['lat'] = [nodes_roms['lat']]
-    
-    '''Calculate the distance seperation'''
 
-    #dist_roms = distance((nodes_drifter['lat'][-1],nodes_drifter['lon'][-1]),(nodes_roms['lat'][-1],nodes_roms['lon'][-1]))
-    dist_fvcom = distance((nodes_drifter['lat'][-1],nodes_drifter['lon'][-1]),(nodes_fvcom['lat'][-1],nodes_fvcom['lon'][-1]))
-    #print 'The seperation of roms was %f and of fvcom was %f kilometers for drifter %s' % (dist_roms[0], dist_fvcom[0], ID )
+	      	''' read data points from fvcom and roms websites and store them'''
+	      	get_fvcom_obj = get_fvcom(mod)
+	      	url_fvcom = get_fvcom_obj.get_url(starttime, endtime)
+	      	nodes_fvcom = get_fvcom_obj.get_track(lon,lat,depth,url_fvcom) # iterates fvcom's data
 
-    ''' set latitude and longitude arrays for basemap'''
+                #heres where we save the predicted path to a file
+                np.save('plots/fc_'+mod+'_'+str(ID)+'.npy',nodes_fvcom)
 
-    lonsize = [min_data(nodes_drifter['lon'],nodes_fvcom['lon']),
-             max_data(nodes_drifter['lon'],nodes_fvcom['lon'])]
-    latsize = [min_data(nodes_drifter['lat'],nodes_fvcom['lat']),
-             max_data(nodes_drifter['lat'],nodes_fvcom['lat'])]
-             
-    diff_lon = (lonsize[0]-lonsize[1])*4
-    diff_lat = (latsize[1]-latsize[0])*4
-    
-    lonsize = [lonsize[0]-diff_lon,lonsize[1]+diff_lon]
-    latsize = [latsize[0]-diff_lat,latsize[1]+diff_lat]
-           
-    ''' Plot the drifter track, model outputs form fvcom and roms, and the basemap'''
-      
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    #draw_basemap(fig, ax, lonsize, latsize)
-    ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='drifter')
-    ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='fvcom')
-    #ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
-    ax.plot(nodes_drifter['lon'][0],nodes_drifter['lat'][0],'c.',label='Startpoint',markersize=20)
-    plt.title('ID: {0} {1} {2} days'.format(ID, starttime.strftime("%Y-%m-%d"), days))
-    plt.legend(loc='lower right')
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
-    plt.show()
-    plt.savefig('plots/'+str(ID)+'.png')
-    
+                ''' the following ROMS-related section may be restored at a later date
+	      	get_roms_obj = get_roms()
+	      	url_roms = get_roms_obj.get_url(starttime, endtime)
+	      	nodes_roms = get_roms_obj.get_track(lon, lat, depth, url_roms)
+	      	if type(nodes_roms['lat']) == np.float64: # ensures that the single point case still functions properly
+	      	 nodes_roms['lon'] = [nodes_roms['lon']]
+	       	 nodes_roms['lat'] = [nodes_roms['lat']]
+                '''
+	    
+	      	#Calculate the distance separation'''
+
+	      	#dist_roms = distance((nodes_drifter['lat'][-1],nodes_drifter['lon'][-1]),(nodes_roms['lat'][-1],nodes_roms['lon'][-1]))
+	      	dist_fvcom = distance((nodes_drifter['lat'][-1],nodes_drifter['lon'][-1]),(nodes_fvcom['lat'][-1],nodes_fvcom['lon'][-1]))
+	      	#print 'The seperation of roms was %f and of fvcom was %f kilometers for drifter %s' % (dist_roms[0], dist_fvcom[0], ID )
+
+	      	''' set latitude and longitude arrays for basemap'''
+
+	      	lonsize = [min_data(nodes_drifter['lon'],nodes_fvcom['lon']),
+		     max_data(nodes_drifter['lon'],nodes_fvcom['lon'])]
+	      	latsize = [min_data(nodes_drifter['lat'],nodes_fvcom['lat']),
+		     max_data(nodes_drifter['lat'],nodes_fvcom['lat'])]
+		     
+	      	diff_lon = (lonsize[0]-lonsize[1])*2
+	      	diff_lat = (latsize[1]-latsize[0])*2
+	    
+	      	lonsize = [lonsize[0]-diff_lon,lonsize[1]+diff_lon]
+	      	latsize = [latsize[0]-diff_lat,latsize[1]+diff_lat]
+		   
+	      	''' Plot the drifter track, model outputs form fvcom and roms, and the basemap'''
+	      
+	      	fig = plt.figure()
+	      	ax = fig.add_subplot(111)
+	      	draw_basemap(fig, ax, lonsize, latsize)
+	      	ax.plot(nodes_drifter['lon'],nodes_drifter['lat'],'ro-',label='observed past')
+	      	ax.plot(nodes_fvcom['lon'],nodes_fvcom['lat'],'yo-',label='forecast future')
+	      	#ax.plot(nodes_roms['lon'],nodes_roms['lat'], 'go-', label='roms')
+	      	#ax.plot(nodes_drifter['lon'][0],nodes_drifter['lat'][0],'c.',label='Startpoint',markersize=20)
+                ax.plot(nodes_drifter['lon'][0],nodes_drifter['lat'][0],'c*',markersize=20)
+                ax.annotate('Start',xy=(nodes_drifter['lon'][0],nodes_drifter['lat'][0]),
+                           xytext=(min(nodes_drifter['lon'])+diff_lon*0.25,min(nodes_drifter['lat'])-diff_lat*0.5),arrowprops=dict(facecolor='black', shrink=0.05))
+	      	#plt.title('ID: {0} {1} {2} days '+mod.format(ID, starttime.strftime("%Y-%m-%d"), days),fontsize=12)
+                plt.title('Grid: '+mod+', ID: {0}, {1} day forecast starts: {2} '.format(ID,days, starttime.strftime("%Y-%m-%d")),fontsize=12)
+	      	plt.legend(loc='lower right')
+	      	plt.xlabel('Longitude')
+	      	plt.ylabel('Latitude')
+	      	plt.show()
+	      	plt.savefig('plots/fc_'+mod+'_'+str(ID)+'.png')
+	    
