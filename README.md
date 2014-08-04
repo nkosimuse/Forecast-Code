@@ -9,3 +9,6 @@ Contains main file (forecastmulti_track) and modules to import and run the main 
 #getdata.py
   getdata from other OPeNDAP sources
   
+#GOM3_boundary.npy
+  defines boundary of GOM3 domain.
+  
